@@ -1,5 +1,5 @@
 import db from "../../configs/DB.js";
-import type { UserRole } from "./userDB.js";
+import type { UserRole } from "./user.entity.js";
 
 export interface PendingUserInfo {
     first_name: string;

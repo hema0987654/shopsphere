@@ -1,4 +1,4 @@
-import type { UserInfo } from "../entitys/userDB.js";
+import type { UserInfo } from "../entitys/user.entity.js";
 class userv {
     private emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     private passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/;
@@ -28,7 +28,7 @@ class userv {
     async validateUserInfo(userInfo: UserInfo) {
         await this.validateEmail(userInfo.email);
         await this.validatePassword(userInfo.password_hash);
-        await this.validateRole(userInfo.role);
+        await this.validateRole(userInfo.role || 'user');
     }
 }
 export default new userv();
