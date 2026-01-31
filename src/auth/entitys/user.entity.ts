@@ -48,14 +48,20 @@ const UserDB = {
         return result.rows[0] ?? null;
     },
 
-    async getAllUsers() {
+    async getUsersWithPagination(offset: number, limit: number) {
+        offset = Math.max(0, offset);
+        limit = Math.min(100, Math.max(1, limit),100);
         const query = `
             SELECT id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at
-            FROM users WHERE role != 'admin'
+            FROM users
+            WHERE role != 'admin'
+            ORDER BY created_at DESC
+            OFFSET $1 LIMIT $2
         `;
-        const result = await db.query(query);
+        const result = await db.query(query, [offset, limit]);
         return result.rows;
-    },
+    }
+,
 
     async deleteById(id: number) {
         const query = `DELETE FROM users WHERE id = $1 RETURNING *`;

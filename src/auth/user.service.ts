@@ -87,8 +87,17 @@ class UserService {
         if (!user) throw new Error('User not found');
         return user;
     }
-    async getAllUsers() {
-        const users = await UserDB.getAllUsers();
+    async getUsersWithPagination(offset: number, limit: number) {
+        if (isNaN(offset) || isNaN(limit)) {
+            throw new Error('Invalid offset or limit');
+        }
+        if (offset < 0 || limit < 1) {
+            throw new Error('Offset must be non-negative and limit must be at least 1');
+        }
+        if (limit > 100) {
+            throw new Error('Limit cannot exceed 100');
+        }
+        const users = await UserDB.getUsersWithPagination(offset, limit);
         return users;
     }
     async deleteUserById(id: number) {

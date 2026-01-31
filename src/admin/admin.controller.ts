@@ -1,4 +1,5 @@
 import userService from "../auth/user.service.js";
+import categorieService from "../categories/categorie.service.js";
 import productsService from "../products/products.service.js";
 
 import type { Request, Response } from "express";
@@ -22,7 +23,9 @@ class AdminController {
         }
         async getAllUsers(req: Request, res: Response) {
             try {
-                const result = await userService.getAllUsers();
+                const offset = parseInt(req.query.offset as string) || 0;
+                const limit = parseInt(req.query.limit as string) || 10;
+                const result = await userService.getUsersWithPagination(offset, limit);
                 return res.status(200).json(result);
             } catch (err: any) {
                 res.status(400).json({ error: err.message });
@@ -76,6 +79,69 @@ class AdminController {
             res.status(400).json({message:error.message});
         }
     }
+
+        async createCategory(req: Request, res: Response) {
+            try {
+                const { name, parentId } = req.body;
+                const category = await categorieService.createCategory(name, parentId);
+                res.status(201).json(category);
+            } catch (error: any) {
+                if (error.message === "Parent category not found") return res.status(404).json({ error: error.message });
+                
+                res.status(400).json({ error: error.message });
+            }}
+    
+        async getAllCategories(req: Request, res: Response) {
+            try {
+                const categories = await categorieService.getAllCategories();
+                res.status(200).json(categories);
+            } catch (error: any) {
+                res.status(500).json({ error: error.message });
+            }
+        }
+    
+        async getCategoryById(req: Request, res: Response) {
+            try {
+                const idParam = req.params.id;
+                if (typeof idParam !== "string") {
+                    return res.status(400).json({ error: "Invalid category id" });
+                }
+                const category = await categorieService.getCategoryById(parseInt(idParam));
+                res.status(200).json(category);
+            } catch (error: any) {
+                if (error.message === "Category not found") return res.status(404).json({ error: error.message });
+                res.status(404).json({ error: error.message });
+            }
+        }
+    
+        async updateCategory(req: Request, res: Response) {
+            try {
+                const idParam = req.params.id;
+                if (typeof idParam !== "string") {
+                    return res.status(400).json({ error: "Invalid category id" });
+                }
+                const { name } = req.body;
+                const category = await categorieService.updateCategory(parseInt(idParam), name);
+                res.status(200).json(category);
+            } catch (error: any) {
+                if (error.message === "Category not found") return res.status(404).json({ error: error.message });
+                res.status(400).json({ error: error.message });
+            }
+        }
+    
+        async deleteCategory(req: Request, res: Response) {
+            try {
+                const idParam = req.params.id;
+                if (typeof idParam !== "string") {
+                    return res.status(400).json({ error: "Invalid category id" });
+                }
+                const category = await categorieService.deleteCategory(parseInt(idParam));
+                res.status(200).json(category);
+            } catch (error: any) {
+                if (error.message === "Category not found") return res.status(404).json({ error: error.message });
+                res.status(404).json({ error: error.message });
+            }
+        }
 }
 
 
