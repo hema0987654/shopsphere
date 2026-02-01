@@ -2,7 +2,7 @@ import db from "../../configs/DB.js";
 
 const categoryEntity = {
 
-    async create(name: string, parentId: number | null = null) {
+    async create(name: string, parentId: number | null = null, quantity: number) {
         const query = `
             INSERT INTO categories (name, parent_id)
             VALUES ($1, $2)

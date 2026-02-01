@@ -3,6 +3,7 @@ import userRouter from './auth/user.routes.js';
 import productRouter from './products/product.routes.js';
 import adminRoutes from './admin/admin.routes.js';
 import categorieRouter from './categories/categorie.routes.js';
+import cartRouter from './cartItems/cart.route.js';
 import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
@@ -12,6 +13,11 @@ app.use('/users', userRouter);
 app.use('/products', productRouter);
 app.use('/admin', adminRoutes);
 app.use('/categories', categorieRouter);
+app.use('/cart', cartRouter);
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 app.get('/', (req, res) => {
     res.send(`

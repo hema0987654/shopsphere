@@ -1,15 +1,18 @@
 import categoryEntity from "./entitys/categorie.entity.js";
 
 class CategoryService {
+    getCartItems(userId: number) {
+        throw new Error("Method not implemented.");
+    }
 
 
-    async createCategory(name: string, parentId: number | null = null) {
+    async createCategory(name: string, parentId: number | null = null , quantity: number) {
         if (!name) throw new Error("Category name is required");
         if (parentId) {
             const parent = await categoryEntity.findById(parentId);
             if (!parent) throw new Error("Parent category not found");
         }
-        return await categoryEntity.create(name, parentId);
+        return await categoryEntity.create(name, parentId, quantity);
     }
     async getAllCategories() {
         return await categoryEntity.findAll();

@@ -2,6 +2,10 @@ import jwt from 'jsonwebtoken';
 import type{ Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 
+export interface AuthRequest extends Express.Request {
+    user?: { id: number; role: string };
+}
+
 dotenv.config();
 
 declare global {
@@ -27,6 +31,13 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 };
 export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" }); 
+    }
+    next();
+};
+
+export const userOnly = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || req.user.role !== 'user') {
         return res.status(403).json({ message: "Access denied" }); 
     }
     next();

@@ -43,7 +43,13 @@ const productdb = {
         const result = await db.query(query, values);
         return result.rows[0] ?? null;
     },
-
+    async updateStock(id: number, stock: number) {
+        const query = `UPDATE products SET stock = $1 WHERE id = $2 RETURNING *`;
+        const values = [stock, id];
+        const result = await db.query(query, values);
+        return result.rows[0] ?? null;
+    }
+    ,
     async deleteById(id: number) {
         const query = `DELETE FROM products WHERE id = $1 RETURNING *`;
         const result = await db.query(query, [id]);
