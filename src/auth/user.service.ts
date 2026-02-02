@@ -1,11 +1,12 @@
-import UserDB from "./entitys/user.entity.js";
+import UserDB from "./data/user.query.js";
 import bcrypt from "bcrypt";
-import { UserRole, type UpdateUserDTO, type UserInfo } from "./entitys/user.entity.js";
+import { UserRole, type UpdateUserDTO, type UserInfo } from "./data/user.query.js";
 import userv from "./validation/user.dto.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import PendingUsersDB from "./entitys/pendingusers.entity.js";
+import PendingUsersDB from "./data/pendingusers.query.js";
 import { sendOTP } from "../utils/sendotp.js";
+import AppError from "../utils/AppError.js";
 dotenv.config();
 const admin_email = process.env.ADMIN_EMAIL ;
 
@@ -26,7 +27,7 @@ class UserService {
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
         const existingUser = await UserDB.findByEmail(info.email);
-        if (existingUser) throw new Error('User with this email already exists');
+        if (existingUser) throw new AppError('User with this email already exists', 400);
 
         const existingPendingUser = await PendingUsersDB.findPendingUserByEmail(info.email);
         if (existingPendingUser) {
@@ -45,13 +46,13 @@ class UserService {
     async verifyOTP(email: string, otp: string) {
         const pendingUser = await PendingUsersDB.findPendingUserByEmail(email);
         if (!pendingUser) {
-            throw new Error('User not found');
+            throw new AppError('User not found', 404);
         }
-        if (pendingUser.otp !== otp) throw new Error('Invalid OTP');
+        if (pendingUser.otp !== otp) throw new AppError('Invalid OTP', 400);
 
-        if (pendingUser.otp_expires_at < new Date()) throw new Error('OTP expired');
+        if (pendingUser.otp_expires_at < new Date()) throw new AppError('OTP expired', 400);
         const findByEmail = await UserDB.findByEmail(email);
-        if (findByEmail) throw new Error('User already verified');
+        if (findByEmail) throw new AppError('User already verified', 400);
         const user = await UserDB.createUser({
             first_name: pendingUser.first_name,
             last_name: pendingUser.last_name,
@@ -69,9 +70,9 @@ class UserService {
     async login(email: string, password: string) {
         await userv.validateEmail(email);
         const user = await UserDB.findByEmail(email);
-        if (!user) throw new Error('User not found');
+        if (!user) throw new AppError('User not found', 404);
         const pass = await bcrypt.compare(password, user.password_hash);
-        if (!pass) throw new Error('Invalid password');
+        if (!pass) throw new AppError('Invalid password', 400);
 
         const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
         const { password_hash, ...safeUser } = user;
@@ -84,25 +85,25 @@ class UserService {
 
     async getUserById(id: number) {
         const user = await UserDB.findById(id);
-        if (!user) throw new Error('User not found');
+        if (!user) throw new AppError('User not found', 404);
         return user;
     }
     async getUsersWithPagination(offset: number, limit: number) {
         if (isNaN(offset) || isNaN(limit)) {
-            throw new Error('Invalid offset or limit');
+            throw new AppError('Invalid offset or limit', 400);
         }
         if (offset < 0 || limit < 1) {
-            throw new Error('Offset must be non-negative and limit must be at least 1');
+            throw new AppError('Offset must be non-negative and limit must be at least 1', 400);
         }
         if (limit > 100) {
-            throw new Error('Limit cannot exceed 100');
+            throw new AppError('Limit cannot exceed 100', 400);
         }
         const users = await UserDB.getUsersWithPagination(offset, limit);
         return users;
     }
     async deleteUserById(id: number) {
         const user = await UserDB.deleteById(id);
-        if (!user) throw new Error('User not found');
+        if (!user) throw new AppError('User not found', 404);
         return user;
     }
 
@@ -110,16 +111,16 @@ class UserService {
     async updateUserById(id: number, updates: UpdateUserDTO) {
         try {
             const user = await UserDB.updateUser(id, updates);
-            if (!user) throw new Error('User not found');
+            if (!user) throw new AppError('User not found', 404);
             return user;
         } catch (err: any) {
-            throw new Error(err.message);
+            throw new AppError(err.message, 500);
         }
     }
 
     async forgetpass(email: string) {
         const user = await UserDB.findByEmail(email);
-        if (!user) throw new Error('User not found');
+        if (!user) throw new AppError('User not found', 404);
         const otp = this.generateOTP();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await PendingUsersDB.createPendingUser({ ...user, role: (user.role || 'user') as UserRole, otp, otp_expires_at: otpExpiresAt });
@@ -128,9 +129,10 @@ class UserService {
     }
     async verifyForgetPass(email: string, otp: string, newPassword: string) {
         const pendingUser = await PendingUsersDB.findPendingUserByEmail(email);
-        if (!pendingUser) throw new Error('User not found');
-        if (pendingUser.otp !== otp) throw new Error('Invalid OTP');
-        if (pendingUser.otp_expires_at < new Date()) throw new Error('OTP expired');
+        if (!pendingUser) throw new AppError('User not found', 404);
+        if (pendingUser.otp !== otp) throw new AppError('Invalid OTP', 400);
+        if (pendingUser.otp_expires_at < new Date()) throw new AppError('OTP expired', 400);
+        await userv.validatePassword(newPassword);
         const newPasswordHash = await bcrypt.hash(newPassword, 10);
         const user = await UserDB.updatePassword(email, newPasswordHash);
         await PendingUsersDB.deletePendingUserByEmail(email);

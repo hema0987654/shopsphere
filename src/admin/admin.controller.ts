@@ -3,145 +3,92 @@ import categorieService from "../categories/categorie.service.js";
 import productsService from "../products/products.service.js";
 
 import type { Request, Response } from "express";
+import AppError from "../utils/AppError.js";
 
 class AdminController {
 
-    //user management methods
-        async getUserById(req: Request, res: Response) {
-            try {
-                const id = req.params.id;
-                if (typeof id === "undefined") {
-                    return res.status(400).json({ error: "User ID parameter is required." });
-                }
-                const idParam = +id;
-                const result = await userService.getUserById(idParam);
-                return res.status(200).json(result);
-            } catch (err: any) {
-                if (err.message === 'User not found') return res.status(404).json({ error: err.message });
-                res.status(400).json({ error: err.message });
-            }
+    async getUserById(req: Request, res: Response) {
+        const id = req.params.id;
+        if (typeof id === "undefined") {
+            throw new AppError("User ID parameter is required.", 400);
         }
-        async getAllUsers(req: Request, res: Response) {
-            try {
-                const offset = parseInt(req.query.offset as string) || 0;
-                const limit = parseInt(req.query.limit as string) || 10;
-                const result = await userService.getUsersWithPagination(offset, limit);
-                return res.status(200).json(result);
-            } catch (err: any) {
-                res.status(400).json({ error: err.message });
-            }
+        const idParam = +id;
+        if (isNaN(idParam)) {
+            throw new AppError("User ID is not a number", 400);
         }
-        
-        async deleteUserById(req: Request, res: Response) {
-            try {
-                const id = req.params.id;
-                if (typeof id === "undefined") {
-                    return res.status(400).json({ error: "User ID parameter is required." });
-                }
-                const idParam = +id;
-                const result = await userService.deleteUserById(idParam);
-                return res.status(200).json(result);
-            } catch (err: any) {
-                if (err.message === 'User not found') return res.status(404).json({ error: err.message });
-                res.status(400).json({ error: err.message });
-            }
-        }
-    
-        //product management methods
-            async createProduct(req:Request,res:Response){
-                try {
-                    const info = req.body;
-                    const newproduct = await productsService.create(info);
-                    res.status(201).json(newproduct);
-                } catch (error:any) {
-                    res.status(400).json({message:error.message});
-                }
-            }
-                async updateProduct(req:Request,res:Response){
-        try {
-            const id = Number(req.params.id);
-            const info = req.body;
-            const updatedproduct = await productsService.update(id,info);
-            return res.status(200).json(updatedproduct);
-        } catch (error:any) {
-            if (error.message === 'this is not number') return res.status(400).json({message:error.message});
-            res.status(400).json({message:error.message});
-        }
+        const result = await userService.getUserById(idParam);
+        return res.status(200).json(result);
+
+    }
+    async getAllUsers(req: Request, res: Response) {
+        const offset = parseInt(req.query.offset as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const result = await userService.getUsersWithPagination(offset, limit);
+        return res.status(200).json(result);
     }
 
-    async deleteProduct(req:Request,res:Response){
-        try {
-            const id = Number(req.params.id);
-            const deletedproduct = await productsService.delete(id);
-            return res.status(200).json(deletedproduct);
-        } catch (error:any) {
-            if (error.message === 'this is not number') return res.status(400).json({message:error.message});
-            res.status(400).json({message:error.message});
+    async deleteUserById(req: Request, res: Response) {
+        const id = req.params.id;
+        if (typeof id === "undefined") {
+            throw new AppError("User ID parameter is required.", 400);
         }
+        const idParam = +id;
+        if (isNaN(idParam)) {
+            throw new AppError("User ID is not a number", 400);
+        }
+        const result = await userService.deleteUserById(idParam);
+        return res.status(200).json(result);
     }
 
-        async createCategory(req: Request, res: Response) {
-            try {
-                const { name, parentId } = req.body;
-                const category = await categorieService.createCategory(name, parentId);
-                res.status(201).json(category);
-            } catch (error: any) {
-                if (error.message === "Parent category not found") return res.status(404).json({ error: error.message });
-                
-                res.status(400).json({ error: error.message });
-            }}
-    
-        async getAllCategories(req: Request, res: Response) {
-            try {
-                const categories = await categorieService.getAllCategories();
-                res.status(200).json(categories);
-            } catch (error: any) {
-                res.status(500).json({ error: error.message });
-            }
+    async createProduct(req: Request, res: Response) {
+        const info = req.body;
+        const newproduct = await productsService.create(info);
+        res.status(201).json(newproduct);
+
+    }
+    async updateProduct(req: Request, res: Response) {
+        const id = Number(req.params.id);
+        if (isNaN(id)) {
+            throw new AppError('this is not number', 400);
         }
-    
-        async getCategoryById(req: Request, res: Response) {
-            try {
-                const idParam = req.params.id;
-                if (typeof idParam !== "string") {
-                    return res.status(400).json({ error: "Invalid category id" });
-                }
-                const category = await categorieService.getCategoryById(parseInt(idParam));
-                res.status(200).json(category);
-            } catch (error: any) {
-                if (error.message === "Category not found") return res.status(404).json({ error: error.message });
-                res.status(404).json({ error: error.message });
-            }
+        const info = req.body;
+        const updatedproduct = await productsService.update(id, info);
+        return res.status(200).json(updatedproduct);
+    }
+
+    async deleteProduct(req: Request, res: Response) {
+        const id = Number(req.params.id);
+        if (isNaN(id)) {
+            throw new AppError('this is not number', 400);
         }
-    
-        async updateCategory(req: Request, res: Response) {
-            try {
-                const idParam = req.params.id;
-                if (typeof idParam !== "string") {
-                    return res.status(400).json({ error: "Invalid category id" });
-                }
-                const { name } = req.body;
-                const category = await categorieService.updateCategory(parseInt(idParam), name);
-                res.status(200).json(category);
-            } catch (error: any) {
-                if (error.message === "Category not found") return res.status(404).json({ error: error.message });
-                res.status(400).json({ error: error.message });
-            }
+        const deletedproduct = await productsService.delete(id);
+        return res.status(200).json(deletedproduct);
+
+    }
+
+    async createCategory(req: Request, res: Response) {
+        const { name, parentId, quantity } = req.body;
+        const category = await categorieService.createCategory(name, parentId, quantity);
+        res.status(201).json(category);
+    }
+    async updateCategory(req: Request, res: Response) {
+        const idParam = req.params.id;
+        if (typeof idParam !== "string") {
+            throw new AppError("Invalid category id", 400);
         }
-    
-        async deleteCategory(req: Request, res: Response) {
-            try {
-                const idParam = req.params.id;
-                if (typeof idParam !== "string") {
-                    return res.status(400).json({ error: "Invalid category id" });
-                }
-                const category = await categorieService.deleteCategory(parseInt(idParam));
-                res.status(200).json(category);
-            } catch (error: any) {
-                if (error.message === "Category not found") return res.status(404).json({ error: error.message });
-                res.status(404).json({ error: error.message });
-            }
+        const { name } = req.body;
+        const category = await categorieService.updateCategory(parseInt(idParam), name);
+        res.status(200).json(category);
+    }
+
+    async deleteCategory(req: Request, res: Response) {
+        const idParam = req.params.id;
+        if (typeof idParam !== "string") {
+            throw new AppError("Invalid category id", 400);
         }
+        const category = await categorieService.deleteCategory(parseInt(idParam));
+        res.status(200).json(category);
+    }
 }
 
 

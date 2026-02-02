@@ -43,10 +43,10 @@ const productdb = {
         const result = await db.query(query, values);
         return result.rows[0] ?? null;
     },
-    async updateStock(id: number, stock: number) {
+    async updateStock(client: any,id: number, stock: number) {
         const query = `UPDATE products SET stock = $1 WHERE id = $2 RETURNING *`;
         const values = [stock, id];
-        const result = await db.query(query, values);
+        const result = await client.query(query, values);
         return result.rows[0] ?? null;
     }
     ,

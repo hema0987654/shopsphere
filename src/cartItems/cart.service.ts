@@ -1,39 +1,39 @@
-import cartDb from "./entity/cart.entity.js";
-import UserDB from "../auth/entitys/user.entity.js";
-import productdb from "../products/entitys/products.entity.js";
+import cartDb from "./data/cart.query.js";
+import UserDB from "../auth/data/user.query.js";
+import productdb from "../products/data/products.query.js";
 import cartDto from "./validation/cart.dto.js";
+import AppError from "../utils/AppError.js";
 
 class CartService {
 
     private async verifyOwnership(cartId: number, userId: number) {
         const cartItem = await cartDb.findCartItemById(cartId);
-        if (!cartItem) throw new Error("Cart item does not exist");
-        if (cartItem.user_id !== userId) throw new Error("Not authorized to modify this cart item");
+        if (!cartItem) throw new AppError("Cart item does not exist", 404);
+        if (cartItem.user_id !== userId) throw new AppError("Not authorized to modify this cart item", 403);
         return cartItem;
     }
 
     async addItemToCart(userId: number, productId: number, quantity: number) {
         await cartDto.validateAddItem({ userId, productId, quantity });
         const user = await UserDB.findById(userId);
-        if (!user) throw new Error("User does not exist");
+        if (!user) throw new AppError("User does not exist", 404);
         const product = await productdb.findById(productId);
-        if (!product) throw new Error("Product does not exist");
-        if (product.stock < quantity) throw new Error("Insufficient stock available");
+        if (!product) throw new AppError("Product does not exist", 404);
+        if (product.stock < quantity) throw new AppError("Insufficient stock available", 400);
 
         const cartItem = await cartDb.getCartByUserId(userId);
-        if (cartItem.find((item) => item.productId === productId)) throw new Error("Product already in cart");
+        if (cartItem.find((item) => item.productId === productId)) throw new AppError("Product already in cart", 400);
 
-        if (!product) throw new Error("Product does not exist");
-        await productdb.updateStock(productId, product.stock - quantity);
+        if (!product) throw new AppError("Product does not exist", 404);
         return await cartDb.createCart(userId, productId, quantity);
     }
 
     async getCartItems(userId: number) {
-        if (userId == null || userId <= 0) throw new Error("Invalid user ID");
+        if (userId == null || userId <= 0) throw new AppError("Invalid user ID", 400);
         const user = await UserDB.findById(userId);
-        if (!user) throw new Error("User does not exist");
+        if (!user) throw new AppError("User does not exist", 404);
         const cartItems = await cartDb.getCartByUserId(userId);
-        if (!cartItems) throw new Error("No cart items found for this user");
+        if (!cartItems) throw new AppError("No cart items found for this user", 404);
         return cartItems;
     }
     async updateCartItem(cartId: number, quantity: number, userId: number) {
@@ -41,21 +41,16 @@ class CartService {
         await this.verifyOwnership(cartId, userId);
         const cartItem = await cartDb.findCartItemById(cartId);
         const product = await productdb.findById(cartItem.product_id);
-        const diff = quantity - cartItem.quantity;
-        if (diff > 0 && product.stock < diff) throw new Error("Insufficient stock");
-        await productdb.updateStock(product.id, product.stock - diff);
+        if (!product) throw new AppError("Product does not exist", 404);
+        if (product.stock < quantity) throw new AppError("Insufficient stock available", 400);
         const updated = await cartDb.updateCartItemQuantity(cartId, quantity);
-        if (!updated) throw new Error("Failed to update cart item");
+        if (!updated) throw new AppError("Failed to update cart item", 500);
         return updated;
     }
 
     async removeCartItem(cartId: number, userId: number) {
         const cartItem = await this.verifyOwnership(cartId, userId);
-        const product = await productdb.findById(cartItem.product_id);
-        if (!product) throw new Error("Product does not exist");
-        if (product) {
-            await productdb.updateStock(product.id, product.stock + cartItem.quantity);
-        }
+        if (!cartItem) throw new AppError("Cart item does not exist", 404);
         return await cartDb.deleteCartItem(cartId);
     }
 }

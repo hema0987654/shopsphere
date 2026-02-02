@@ -1,4 +1,4 @@
-import { authenticateToken } from "../middleware/auth.js";
+import { authenticateToken } from "../utils/middleware/auth.js";
 import productController from "./product.controller.js";
 
 import{ Router } from "express";

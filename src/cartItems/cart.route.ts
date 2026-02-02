@@ -1,6 +1,6 @@
 import CartController from "./cart.controller.js";
 import { Router } from "express";
-import { authenticateToken,userOnly } from "../middleware/auth.js";
+import { authenticateToken,userOnly } from "../utils/middleware/auth.js";
 const cartRouter = Router();
 
 cartRouter.post("/", authenticateToken, userOnly, CartController.addItemToCart);

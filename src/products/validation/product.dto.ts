@@ -1,4 +1,4 @@
-import type { ProductsInfo } from "../entitys/products.entity.js";
+import type { ProductsInfo } from "../data/products.query.js";
 
 class productv {
     

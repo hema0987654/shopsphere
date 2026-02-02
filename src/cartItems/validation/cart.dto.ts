@@ -1,6 +1,8 @@
+import AppError from "../../utils/AppError.js";
+
 class CartDto {
     private validateNumber(value: number, name: string) {
-        if (value == null || value <= 0) throw new Error(`Invalid ${name}`);
+        if (value == null || value <= 0) throw new AppError(`Invalid ${name}`, 400);
     }
 
     async userId(userId: number): Promise<void> {

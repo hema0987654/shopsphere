@@ -34,6 +34,11 @@ const cartDb = {
         const values = [cartId];
         const result = await db.query(query, values);
         return result.rows[0];
+    },
+    async clearCartByUserId(client: any, userId: number) {
+        const query = `DELETE FROM cart_items WHERE user_id = $1`;
+        const values = [userId];
+        await client.query(query, values);
     }
 
 };

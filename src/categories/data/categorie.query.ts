@@ -48,6 +48,7 @@ const categoryEntity = {
         );
         return result.rows[0];
     },
+    
 };
 
 export default categoryEntity;

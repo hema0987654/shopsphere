@@ -4,7 +4,9 @@ import productRouter from './products/product.routes.js';
 import adminRoutes from './admin/admin.routes.js';
 import categorieRouter from './categories/categorie.routes.js';
 import cartRouter from './cartItems/cart.route.js';
+import orderRouter from './order/order.route.js';
 import dotenv from 'dotenv';
+import globalErrorHandler from './utils/middleware/error.middleware.js';
 dotenv.config();
 const app = express();
 
@@ -14,6 +16,8 @@ app.use('/products', productRouter);
 app.use('/admin', adminRoutes);
 app.use('/categories', categorieRouter);
 app.use('/cart', cartRouter);
+app.use('/orders', orderRouter);
+app.use(globalErrorHandler)
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });

@@ -1,5 +1,5 @@
 import adminController from "./admin.controller.js";
-import { authenticateToken,adminOnly } from "../middleware/auth.js";
+import { authenticateToken,adminOnly } from "../utils/middleware/auth.js";
 
 
 import { Router } from "express";
