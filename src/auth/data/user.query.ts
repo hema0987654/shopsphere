@@ -18,6 +18,7 @@ export interface UpdateUserDTO {
     first_name?: string;
     last_name?: string;
     avatar_url?: string;
+    password_hash?: string;
 }
 
 const UserDB = {
@@ -25,7 +26,7 @@ const UserDB = {
         const query = `
             INSERT INTO users (first_name, last_name, email, password_hash, role, avatar_url)
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING *
+            RETURNING id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at
         `;
         const values = [info.first_name, info.last_name, info.email, info.password_hash, info.role, info.avatar_url];
         const result = await db.query(query, values);
@@ -64,13 +65,22 @@ const UserDB = {
 ,
 
     async deleteById(id: number) {
-        const query = `DELETE FROM users WHERE id = $1 RETURNING *`;
+        const query = `
+            DELETE FROM users
+            WHERE id = $1
+            RETURNING id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at
+        `;
         const result = await db.query(query, [id]);
         return result.rows[0] ?? null;
     },
 
     async deactivateUser(id: number) {
-        const query = `UPDATE users SET is_active = false WHERE id = $1 RETURNING *`;
+        const query = `
+            UPDATE users
+            SET is_active = false, updated_at = now()
+            WHERE id = $1
+            RETURNING id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at
+        `;
         const result = await db.query(query, [id]);
         return result.rows[0] ?? null;
     },
@@ -88,9 +98,15 @@ const UserDB = {
         }
 
         if (fields.length === 0) return null;
+        fields.push(`updated_at = now()`);
 
         values.push(id);
-        const query = `UPDATE users SET ${fields.join(', ')} WHERE id = $${index} RETURNING *`;
+        const query = `
+            UPDATE users
+            SET ${fields.join(', ')}
+            WHERE id = $${index}
+            RETURNING id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at
+        `;
         const result = await db.query(query, values);
         return result.rows[0] ?? null;
     },
@@ -98,6 +114,17 @@ const UserDB = {
     async updatePassword(email: string, newPasswordHash: string) {
         const query = `UPDATE users SET password_hash = $1 WHERE email = $2 RETURNING id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at`;
         const result = await db.query(query, [newPasswordHash, email]);
+        return result.rows[0] ?? null;
+    },
+
+    async setActiveStatus(id: number, isActive: boolean) {
+        const query = `
+            UPDATE users
+            SET is_active = $1, updated_at = now()
+            WHERE id = $2
+            RETURNING id, first_name, last_name, email, role, avatar_url, is_active, created_at, updated_at
+        `;
+        const result = await db.query(query, [isActive, id]);
         return result.rows[0] ?? null;
     }
 };

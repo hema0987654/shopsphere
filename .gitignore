@@ -3,9 +3,17 @@ node_modules/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Build output
 dist/
+
+# Uploaded files
+uploads/
+
+# App logs
+logs/
 
 # Logs
 npm-debug.log*

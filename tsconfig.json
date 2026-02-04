@@ -41,4 +41,7 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
   }
+  ,
+  "include": ["src/**/*.ts"],
+  "exclude": ["frontend", "node_modules", "dist", "uploads"]
 }

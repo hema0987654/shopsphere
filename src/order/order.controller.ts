@@ -19,7 +19,13 @@ class OrderController {
       throw new AppError("Invalid order id", 400);
     }
 
-    const order = await orderService.getOrderById(orderId);
+    const requester = (req as any)?.user;
+    const requesterId = Number(requester?.id);
+    if (Number.isNaN(requesterId) || requesterId <= 0) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const order = await orderService.getOrderById(orderId, { id: requesterId, role: requester?.role });
     res.status(200).json(order);
   }
 
@@ -30,9 +36,13 @@ class OrderController {
     }
 
     const { status } = req.body;
-    const userId = req.user?.id;
+    const requester = (req as any)?.user;
+    const requesterId = Number(requester?.id);
+    if (Number.isNaN(requesterId) || requesterId <= 0) {
+      throw new AppError("Unauthorized", 401);
+    }
 
-    const updatedOrder = await orderService.updateOrderStatus(orderId, status, userId);
+    const updatedOrder = await orderService.updateOrderStatus(orderId, status, { id: requesterId, role: requester?.role });
     res.status(200).json(updatedOrder);
   }
 
@@ -42,8 +52,13 @@ class OrderController {
       throw new AppError("Invalid order id", 400);
     }
 
-    const userId = req.user?.id;
-    const result = await orderService.deleteOrder(orderId, userId);
+    const requester = (req as any)?.user;
+    const requesterId = Number(requester?.id);
+    if (Number.isNaN(requesterId) || requesterId <= 0) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const result = await orderService.deleteOrder(orderId, { id: requesterId, role: requester?.role });
     res.status(200).json(result);
   }
 }

@@ -71,6 +71,7 @@ class UserService {
         await userv.validateEmail(email);
         const user = await UserDB.findByEmail(email);
         if (!user) throw new AppError('User not found', 404);
+        if ((user as any)?.is_active === false) throw new AppError("Account is deactivated", 403);
         const pass = await bcrypt.compare(password, user.password_hash);
         if (!pass) throw new AppError('Invalid password', 400);
 
@@ -109,13 +110,33 @@ class UserService {
 
 
     async updateUserById(id: number, updates: UpdateUserDTO) {
-        try {
-            const user = await UserDB.updateUser(id, updates);
-            if (!user) throw new AppError('User not found', 404);
-            return user;
-        } catch (err: any) {
-            throw new AppError(err.message, 500);
+        if (Number.isNaN(id)) {
+            throw new AppError("Invalid user id", 400);
         }
+        if (!updates || typeof updates !== "object") {
+            throw new AppError("Invalid updates payload", 400);
+        }
+
+        await userv.validateUpdate(updates as any);
+
+        const updatesToSave: any = { ...(updates as any) };
+        if (typeof updatesToSave.password_hash === "string") {
+            updatesToSave.password_hash = await bcrypt.hash(updatesToSave.password_hash, 10);
+        }
+
+        const user = await UserDB.updateUser(id, updatesToSave);
+        if (!user) throw new AppError("User not found", 404);
+        const { password_hash, ...safeUser } = user as any;
+        return safeUser;
+    }
+
+    async setUserActiveStatus(id: number, isActive: boolean) {
+        if (Number.isNaN(id)) {
+            throw new AppError("Invalid user id", 400);
+        }
+        const user = await UserDB.setActiveStatus(id, isActive);
+        if (!user) throw new AppError("User not found", 404);
+        return user;
     }
 
     async forgetpass(email: string) {

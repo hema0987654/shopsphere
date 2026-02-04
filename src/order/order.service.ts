@@ -4,6 +4,7 @@ import { OrderStatus } from "./db/order.query.js";
 import AppError from "../utils/AppError.js";
 import productdb from "../products/data/products.query.js";
 import db from "../configs/DB.js";
+import PaymentQueries, { PaymentStatus } from "../payments/data/payment.query.js";
 class OrderService {
     async createOrder(user_id: number) {
         const client = await db.connect();
@@ -29,6 +30,12 @@ class OrderService {
             }
 
             const order = await OrderQueries.createOrder(client, user_id, totalAmount);
+            await PaymentQueries.createPayment(client, {
+                order_id: order.id,
+                status: PaymentStatus.pending,
+                method: null,
+                amount: totalAmount
+            });
             for (const item of cartItems) {
                 const product = prductMap.get(item.product_id);
                 const newStock = product.stock - item.quantity;
@@ -50,21 +57,24 @@ class OrderService {
         }
     }
 
-    async getOrderById(orderId: number) {
+    async getOrderById(orderId: number, requester?: { id: number; role?: string }) {
         const order = await OrderQueries.getOrderById(orderId);
         if (!order) {
             throw new AppError("Order not found.", 404);
+        }
+        if (requester?.role !== "admin" && requester?.id && order.user_id !== requester.id) {
+            throw new AppError("Unauthorized to view this order.", 403);
         }
         return order;
     }
-    async updateOrderStatus(orderId: number, status: string, user_id?: number) {
-        const order = await OrderQueries.getOrderById(orderId);
+    async updateOrderStatus(orderId: number, status: string, requester?: { id: number; role?: string }) {
+        if (requester?.role !== "admin") {
+            throw new AppError("Forbidden", 403);
+        }
+        const order = await OrderQueries.getOrderHeaderById(orderId);
 
         if (!order) {
             throw new AppError("Order not found.", 404);
-        }
-        if (user_id && order.user_id !== user_id) {
-            throw new AppError("Unauthorized to update this order.", 403);
         }
         const validStatuses = Object.values(OrderStatus);
         if (!validStatuses.includes(status as any)) {
@@ -72,13 +82,13 @@ class OrderService {
         }
         return await OrderQueries.updateOrderStatus(orderId, status as any);
     }
-    async deleteOrder(orderId: number, user_id?: number) {
-        const order = await OrderQueries.getOrderById(orderId);
+    async deleteOrder(orderId: number, requester?: { id: number; role?: string }) {
+        if (requester?.role !== "admin") {
+            throw new AppError("Forbidden", 403);
+        }
+        const order = await OrderQueries.getOrderHeaderById(orderId);
         if (!order) {
             throw new AppError("Order not found.", 404);
-        }
-        if (user_id && order.user_id !== user_id) {
-            throw new AppError("Unauthorized to delete this order.", 403);
         }
         return await OrderQueries.deleteOrder(orderId);
     }

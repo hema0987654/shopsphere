@@ -21,10 +21,10 @@ class CartService {
         if (!product) throw new AppError("Product does not exist", 404);
         if (product.stock < quantity) throw new AppError("Insufficient stock available", 400);
 
-        const cartItem = await cartDb.getCartByUserId(userId);
-        if (cartItem.find((item) => item.productId === productId)) throw new AppError("Product already in cart", 400);
-
-        if (!product) throw new AppError("Product does not exist", 404);
+        const cartItems = await cartDb.getCartByUserId(userId);
+        if (cartItems.find((item: any) => item.product_id === productId)) {
+            throw new AppError("Product already in cart", 400);
+        }
         return await cartDb.createCart(userId, productId, quantity);
     }
 

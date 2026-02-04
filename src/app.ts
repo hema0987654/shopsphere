@@ -5,19 +5,28 @@ import adminRoutes from './admin/admin.routes.js';
 import categorieRouter from './categories/categorie.routes.js';
 import cartRouter from './cartItems/cart.route.js';
 import orderRouter from './order/order.route.js';
+import paymentRouter from './payments/payment.route.js';
+import reviewRouter from './reviews/review.route.js';
+import swaggerUi from 'swagger-ui-express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import globalErrorHandler from './utils/middleware/error.middleware.js';
+import swaggerSpec from './utils/swagger.js';
 dotenv.config();
 const app = express();
 
+app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 app.use('/users', userRouter);
 app.use('/products', productRouter);
 app.use('/admin', adminRoutes);
 app.use('/categories', categorieRouter);
 app.use('/cart', cartRouter);
 app.use('/orders', orderRouter);
-app.use(globalErrorHandler)
+app.use('/payments', paymentRouter);
+app.use('/reviews', reviewRouter);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -119,9 +128,9 @@ p {
 </head>
 <body>
     <div class="container">
-        <div class="status">LIVE • API ONLINE</div>
+        <div class="status">LIVE - API ONLINE</div>
         <h1>My Backend</h1>
-        <p>Powering the app behind the scenes 🚀</p>
+        <p>Powering the app behind the scenes</p>
 
         <div class="buttons">
             <a href="/health">Health</a>
@@ -130,7 +139,7 @@ p {
         </div>
 
         <div class="footer">
-            ⏱ ${new Date().toLocaleString()}
+            ${new Date().toLocaleString()}
         </div>
     </div>
 </body>
@@ -138,10 +147,7 @@ p {
     `);
 });
 
-
-
-
-
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
